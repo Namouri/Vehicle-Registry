@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vehicle Registry</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface-2: #eceef2;
+    --border: #dde1e7;
+    --text: #1b2230;
+    --text-secondary: #5c6577;
+    --accent: #1f3a5f;
+    --accent-hover: #16293f;
+    --accent-bg: #e8edf4;
+    --success: #1f7a4d;
+    --success-bg: #e6f3ec;
+    --warning: #9a6300;
+    --warning-bg: #faf0db;
+    --danger: #b23a3a;
+    --danger-bg: #fbe9e9;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text); font-family: var(--font);
+    font-size: 15px; line-height: 1.5;
+  }
+  header {
+    background: var(--accent); color: #fff; padding: 1.1rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;
+  }
+  header h1 { font-size: 1.15rem; font-weight: 600; margin: 0; letter-spacing: 0.01em; }
+  header p { margin: 0.15rem 0 0; font-size: 0.82rem; color: #c3d0e0; }
+
+  .reason-bar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0.7rem 1.5rem; display: flex; align-items: center; gap: 0.6rem;
+  }
+  .reason-bar label { font-size: 0.85rem; color: var(--text-secondary); white-space: nowrap; }
+  .reason-bar input {
+    flex: 1; max-width: 420px; padding: 0.5rem 0.7rem; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 0.9rem; font-family: var(--font);
+  }
+  .reason-bar input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  main {
+    max-width: 1100px; margin: 0 auto; padding: 1.5rem; display: grid;
+    grid-template-columns: 300px 1fr; gap: 1.5rem; align-items: start;
+  }
+  @media (max-width: 760px) { main { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.25rem; }
+  .panel + .panel { margin-top: 1.5rem; }
+  .panel h2 { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); margin: 0 0 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .plate {
+    display: inline-block; font-family: var(--mono); font-weight: 700; font-size: 0.92rem;
+    letter-spacing: 0.12em; background: #fff; color: #111; border: 1.5px solid #111;
+    border-radius: 4px; padding: 0.15rem 0.5rem;
+  }
+
+  .vehicle-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+    padding: 0.6rem 0.5rem; border-radius: 6px; cursor: pointer; border: 1px solid transparent;
+  }
+  .vehicle-row:hover { background: var(--surface-2); }
+  .vehicle-row.active { background: var(--accent-bg); border-color: var(--accent); }
+  .vehicle-row .meta { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.15rem; }
+
+  .badge { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15rem 0.55rem; border-radius: 999px; white-space: nowrap; }
+  .badge.InTraffic { background: var(--success-bg); color: var(--success); }
+  .badge.Deregistered { background: var(--warning-bg); color: var(--warning); }
+  .badge.Exported { background: var(--surface-2); color: var(--text-secondary); }
+
+  form.create { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem; }
+  form.create input, form.create select {
+    padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.88rem; font-family: var(--font);
+  }
+  .btn {
+    padding: 0.5rem 1rem; border-radius: 6px; border: none; font-size: 0.88rem; font-weight: 600;
+    cursor: pointer; font-family: var(--font);
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-ghost { background: var(--surface-2); color: var(--text); }
+  .btn-ghost:hover { background: var(--border); }
+  .btn-danger { background: var(--danger-bg); color: var(--danger); }
+  .btn-danger:hover { background: #f5d4d4; }
+
+  .empty { color: var(--text-secondary); font-size: 0.9rem; padding: 0.5rem 0; }
+
+  dl.record { display: grid; grid-template-columns: 130px 1fr; row-gap: 0.55rem; margin: 0; font-size: 0.9rem; }
+  dl.record dt { color: var(--text-secondary); }
+  dl.record dd { margin: 0; }
+
+  .tabs { display: flex; gap: 0.3rem; border-bottom: 1px solid var(--border); margin: 1.4rem 0 0.9rem; }
+  .tab { padding: 0.5rem 0.9rem; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th, td { text-align: left; padding: 0.5rem 0.4rem; border-bottom: 1px solid var(--border); }
+  th { color: var(--text-secondary); font-weight: 600; font-size: 0.78rem; }
+
+  .actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+  .asof-row { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.6rem; flex-wrap: wrap; }
+  .asof-row input { padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; }
+  .asof-note { font-size: 0.8rem; color: var(--accent); margin-top: 0.6rem; }
+
+  #error { color: var(--danger); font-size: 0.85rem; padding: 0 1.5rem; min-height: 1.2em; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Vehicle Registry</h1>
+    <p>Every change is kept. Every read is logged.</p>
+  </div>
+</header>
+
+<div class="reason-bar">
+  <label for="reason">Access reason</label>
+  <input id="reason" placeholder="e.g. Case 4521, owner enquiry" />
+</div>
+<p id="error"></p>
+
+<main>
+  <div>
+    <div class="panel">
+      <h2>Vehicles</h2>
+      <div id="vehicleList"><p class="empty">Loading…</p></div>
+    </div>
+    <div class="panel">
+      <h2>Add vehicle</h2>
+      <form class="create" id="createForm">
+        <input name="registrationNumber" placeholder="Registration number" required />
+        <input name="make" placeholder="Make" required />
+        <input name="model" placeholder="Model" required />
+        <input name="year" type="number" placeholder="Year" required />
+        <input name="owner" placeholder="Owner" required />
+        <select name="status">
+          <option value="0">In traffic</option>
+          <option value="1">Deregistered</option>
+          <option value="2">Exported</option>
+        </select>
+        <input name="inspectionDue" type="date" />
+        <button type="submit" class="btn btn-primary">Add vehicle</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Record</h2>
+    <div id="detail"><p class="empty">Select a vehicle on the left to view its record.</p></div>
+
+    <div class="asof-row">
+      <label for="asOfDate" style="font-size:0.82rem;color:var(--text-secondary);">View as of</label>
+      <input id="asOfDate" type="date" />
+      <button class="btn btn-ghost" id="asOfBtn">View</button>
+      <button class="btn btn-ghost" id="asOfClear">Back to current</button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="history">Change history</div>
+      <div class="tab" data-tab="access">Access log</div>
+    </div>
+    <div id="tab-history">
+      <table><thead><tr><th>When</th><th>Type</th><th>By</th><th>Owner</th><th>Status</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div id="tab-access" style="display:none;">
+      <table><thead><tr><th>When</th><th>By</th><th>Reason</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+</main>
+
+<script>
+const statusNames = ["InTraffic", "Deregistered", "Exported"];
+const statusLabels = ["In traffic", "Deregistered", "Exported"];
+let selectedId = null;
+let currentVehicle = null;
+
+function showError(msg) { document.getElementById('error').textContent = msg || ''; }
+function reasonHeader() {
+  const reason = document.getElementById('reason').value.trim();
+  return reason ? { 'X-Access-Reason': reason } : {};
+}
+async function api(path, options = {}) {
+  const res = await fetch(path, options);
+  if (!res.ok) { throw new Error(`${res.status} ${res.statusText}: ${await res.text()}`); }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+async function loadVehicleList() {
+  try {
+    const vehicles = await api('/api/vehicles');
+    const container = document.getElementById('vehicleList');
+    if (vehicles.length === 0) {
+      container.innerHTML = '<p class="empty">No vehicles yet. Add one below to get started.</p>';
+      return;
+    }
+    container.innerHTML = vehicles.map(v => `
+      <div class="vehicle-row ${v.id === selectedId ? 'active' : ''}" onclick="selectVehicle(${v.id})">
+        <div>
+          <span class="plate">${v.registrationNumber}</span>
+          <div class="meta">${v.make} ${v.model} · ${v.year}</div>
+        </div>
+        <span class="badge ${statusNames[v.status]}">${statusLabels[v.status]}</span>
+      </div>`).join('');
+  } catch (e) { showError(e.message); }
+}
+
+async function selectVehicle(id) {
+  selectedId = id;
+  document.getElementById('asOfDate').value = '';
+  await loadVehicleList();
+  await refreshDetail();
+  await refreshHistory();
+  await refreshAccessLog();
+}
+
+async function refreshDetail(asOf) {
+  if (selectedId === null) return;
+  const reason = document.getElementById('reason').value.trim();
+  if (!reason) { showError('Enter an access reason first.'); return; }
+  showError('');
+  try {
+    const qs = asOf ? `?asOf=${asOf}` : '';
+    const v = await api(`/api/vehicles/${selectedId}${qs}`, { headers: reasonHeader() });
+    currentVehicle = asOf ? null : v;
+    document.getElementById('detail').innerHTML = `
+      <dl class="record">
+        <dt>Registration</dt><dd><span class="plate">${v.registrationNumber}</span></dd>
+        <dt>Make / model</dt><dd>${v.make} ${v.model} (${v.year})</dd>
+        <dt>Owner</dt><dd>${v.owner}</dd>
+        <dt>Status</dt><dd><span class="badge ${statusNames[v.status]}">${statusLabels[v.status]}</span></dd>
+        <dt>Inspection due</dt><dd>${v.inspectionDue ? v.inspectionDue.substring(0,10) : '—'}</dd>
+      </dl>
+      ${asOf ? `<p class="asof-note">Showing the record as it stood on ${asOf}.</p>` :
+        `<div class="actions">
+           <button class="btn btn-ghost" onclick="startEdit()">Edit</button>
+           <button class="btn btn-danger" onclick="deleteCurrentVehicle()">Delete</button>
+         </div>`}`;
+  } catch (e) { showError(e.message); }
+}
+
+function startEdit() {
+  if (!currentVehicle) return;
+  const v = currentVehicle;
+  document.getElementById('detail').innerHTML = `
+    <dl class="record">
+      <dt>Registration</dt><dd><span class="plate">${v.registrationNumber}</span></dd>
+      <dt>Owner</dt><dd><input id="editOwner" value="${v.owner}" style="width:100%;padding:0.4rem;border:1px solid var(--border);border-radius:6px;" /></dd>
+      <dt>Status</dt><dd>
+        <select id="editStatus" style="padding:0.4rem;border:1px solid var(--border);border-radius:6px;">
+          <option value="0" ${v.status===0?'selected':''}>In traffic</option>
+          <option value="1" ${v.status===1?'selected':''}>Deregistered</option>
+          <option value="2" ${v.status===2?'selected':''}>Exported</option>
+        </select></dd>
+      <dt>Inspection due</dt><dd><input id="editInspection" type="date" value="${v.inspectionDue ? v.inspectionDue.substring(0,10) : ''}" style="padding:0.4rem;border:1px solid var(--border);border-radius:6px;" /></dd>
+    </dl>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="saveEdit()">Save changes</button>
+      <button class="btn btn-ghost" onclick="refreshDetail()">Cancel</button>
+    </div>`;
+}
+
+async function saveEdit() {
+  const body = {
+    owner: document.getElementById('editOwner').value,
+    status: Number(document.getElementById('editStatus').value),
+    inspectionDue: document.getElementById('editInspection').value || null
+  };
+  try {
+    await api(`/api/vehicles/${selectedId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    await refreshDetail(); await refreshHistory(); await loadVehicleList();
+  } catch (e) { showError(e.message); }
+}
+
+async function deleteCurrentVehicle() {
+  if (!confirm('Delete this vehicle? This cannot be undone. Its history will still be kept.')) return;
+  try {
+    await api(`/api/vehicles/${selectedId}`, { method: 'DELETE' });
+    selectedId = null; currentVehicle = null;
+    document.getElementById('detail').innerHTML = '<p class="empty">Select a vehicle on the left to view its record.</p>';
+    document.querySelector('#tab-history tbody').innerHTML = '';
+    document.querySelector('#tab-access tbody').innerHTML = '';
+    await loadVehicleList();
+  } catch (e) { showError(e.message); }
+}
+
+async function refreshHistory() {
+  if (selectedId === null) return;
+  if (!document.getElementById('reason').value.trim()) return;
+  try {
+    const rows = await api(`/api/vehicles/${selectedId}/history`, { headers: reasonHeader() });
+    document.querySelector('#tab-history tbody').innerHTML = rows.map(h => `
+      <tr><td>${new Date(h.changedAtUtc).toLocaleString()}</td><td>${h.changeType}</td>
+      <td>${h.changedBy}</td><td>${h.owner}</td><td>${statusLabels[h.status]}</td></tr>`).join('')
+      || '<tr><td colspan="5" class="empty">No history yet.</td></tr>';
+  } catch (e) { showError(e.message); }
+}
+
+async function refreshAccessLog() {
+  if (selectedId === null) return;
+  if (!document.getElementById('reason').value.trim()) return;
+  try {
+    const rows = await api(`/api/vehicles/${selectedId}/access-log`, { headers: reasonHeader() });
+    document.querySelector('#tab-access tbody').innerHTML = rows.map(a => `
+      <tr><td>${new Date(a.accessedAtUtc).toLocaleString()}</td><td>${a.accessedBy}</td><td>${a.reason}</td></tr>`).join('')
+      || '<tr><td colspan="3" class="empty">No access logged yet.</td></tr>';
+  } catch (e) { showError(e.message); }
+}
+
+document.getElementById('createForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  showError('');
+  const form = new FormData(e.target);
+  const body = {
+    registrationNumber: form.get('registrationNumber'), make: form.get('make'), model: form.get('model'),
+    year: Number(form.get('year')), owner: form.get('owner'), status: Number(form.get('status')),
+    inspectionDue: form.get('inspectionDue') || null
+  };
+  try {
+    await api('/api/vehicles', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    e.target.reset();
+    await loadVehicleList();
+  } catch (e) { showError(e.message); }
+});
+
+document.getElementById('asOfBtn').addEventListener('click', () => {
+  const date = document.getElementById('asOfDate').value;
+  if (date) refreshDetail(date);
+});
+document.getElementById('asOfClear').addEventListener('click', () => {
+  document.getElementById('asOfDate').value = '';
+  refreshDetail();
+});
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-history').style.display = tab.dataset.tab === 'history' ? 'block' : 'none';
+    document.getElementById('tab-access').style.display = tab.dataset.tab === 'access' ? 'block' : 'none';
+  });
+});
+
+loadVehicleList();
+</script>
+</body>
+</html>

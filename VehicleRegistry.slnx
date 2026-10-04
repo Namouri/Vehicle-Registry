@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/VehicleRegistry.Api/VehicleRegistry.Api.csproj" />
+    <Project Path="src/VehicleRegistry.Core/VehicleRegistry.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/VehicleRegistry.Tests/VehicleRegistry.Tests.csproj" />
+  </Folder>
+</Solution>
